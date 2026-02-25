@@ -424,6 +424,43 @@ http://<frontend_EXTERNAL-IP>
 mysql -h <RDS_Endpoint> -u <username> -p<password> 
 ```
 
+## Verification Checklist
+
+- Backend reachable via EKS LoadBalancer  
+- Frontend reachable via EKS LoadBalancer  
+- Database connected via RDS endpoint  
+- Pods in Running state  
+- Services exposed properly  
+
+## Common Troubleshooting
+
+### Pod not running?
+```bash
+kubectl describe pod <pod-name>
+kubectl logs <pod-name>
+```
+Common errors 
+- eks not communicating with ec2 ---> Security Group mismatch
+- RDS not communication with ec2 ---> Security Group mismatch
+- docker image tags mismatch ---> Verify tags (image name in yaml file must same with the image on the Dockerhub)
+- pod Imagepullbackoff 
+- Pod not --> creating or running
+
+### Service not getting `EXTERNAL-IP`?
+
+Wait for 2–3 minutes (AWS LoadBalancer provisioning takes time), or run:
+
+```bash
+kubectl get svc -w
+```
+Backend not connecting to Amazon RDS?
+
+Check the following:
+
+✔ Security Group inbound rules allow database access
+
+✔ Correct RDS endpoint in application.properties file
+
 
 
 
