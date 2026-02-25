@@ -83,6 +83,12 @@ Execute the following SQL commands inside the MySQL shell:
 ```sql
 SHOW DATABASES;
 CREATE DATABASE student_db;
+```
+change username and passowrd which is given in the RDS database
+```
+GRANT ALL PRIVILEGES ON springbackend.* TO 'username'@'localhost' IDENTIFIED BY 'your_password';
+```
+```
 USE student_db;
 ```
 ## Step 6: Create Students Table
@@ -406,6 +412,11 @@ http://<frontend_EXTERNAL-IP>
 
 🎉 **EasyCRUD application is live and fully functional!**
 
+**enter the values on the portal the verify it by login into the RDS database**
+
+```
+mysql -h <RDS_Endpoint> -u <username> -p<password> 
+```
 
 
 
