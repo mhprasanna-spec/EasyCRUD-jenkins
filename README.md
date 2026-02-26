@@ -468,6 +468,11 @@ Check the following:
 ## Additional --> Use Ingres
 
 create ingres file by using path based routing
+
+- Install NGINX Ingress Controller (Manifests)
+  ```
+  kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+  ```
 ```
 vim ingres-path.yaml
 ```
@@ -512,3 +517,4 @@ verify
 ```
 kubectl get ing
 ```
+
