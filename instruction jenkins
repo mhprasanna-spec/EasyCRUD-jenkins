@@ -1,0 +1,4 @@
+- install java on all agents
+- install the required build tools for FE and BE
+- install aws cli on BE (s3)
+- give sudo permission to docker
