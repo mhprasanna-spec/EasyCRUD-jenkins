@@ -1,0 +1,73 @@
+pipeline {
+    agent none // We specify the agent inside each stage instead
+
+    environment {
+        S3_BUCKET = 'maibuxx'
+        JAR_NAME  = 'student-registration-backend-0.0.1-SNAPSHOT.jar'
+        BACK_IMAGE = 'my-backend-app'
+        FRONT_IMAGE = 'my-frontend-app'
+    }
+
+    stages {
+        // --- BACKEND STAGES ---
+        stage('Pull & Build Backend') {
+            agent { label 'back' }
+            steps {
+                git branch: 'main', url: 'https://github.com/mhprasanna-spec/EasyCRUD-jenkins.git'
+                sh '''
+                    cd backend
+                    mvn clean package -DskipTests
+                '''
+            }
+        }
+
+        stage('S3 Upload') {
+            agent { label 'back' }
+            steps {
+                withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
+                                   credentialsId: 'ubuntu', 
+                                   secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    s3Upload(
+                        bucket: "${S3_BUCKET}",
+                        file: "backend/target/${JAR_NAME}"
+                    )
+                }
+            }
+        }
+
+        stage('Deploy Backend') {
+            agent { label 'back' }
+            steps {
+                withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
+                                   credentialsId: 'ubuntu', 
+                                   secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh """
+                        docker stop my-app || true
+                        docker rm my-app || true
+                        
+                        aws s3 cp s3://${S3_BUCKET}/${JAR_NAME} backend/app.jar
+                        
+                        docker build -t ${BACK_IMAGE} ./backend
+                        docker run -d -p 8081:8081 --name my-app ${BACK_IMAGE}
+                    """
+                }
+            }
+        }
+
+        // --- FRONTEND STAGE ---
+        stage('Front End Deploy') {
+            agent { label 'front' } 
+            steps {
+                // Note: Ensure the code is also pulled on the 'front' agent if it's a different machine
+                git branch: 'main', url: 'https://github.com/mhprasanna-spec/EasyCRUD-jenkins.git'
+                sh """
+                    cd frontend
+                    docker stop front || true
+                    docker rm front || true
+                    docker build -t ${FRONT_IMAGE} .
+                    docker run -d -p 80:80 --name front ${FRONT_IMAGE}
+                """
+            }
+        }
+    }
+}
