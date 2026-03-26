@@ -1,0 +1,64 @@
+pipeline {
+    agent { label 'back' }
+
+    // Define your variables here so they can be reused
+    environment {
+        S3_BUCKET = 'maibuxx'
+        JAR_NAME  = 'student-registration-backend-0.0.1-SNAPSHOT.jar'
+        IMAGE     = 'my-backend-app'
+    }
+
+    stages {
+        stage('Pull') {
+            steps {
+                git branch: 'main', url: 'https://github.com/mhprasanna-spec/EasyCRUD-jenkins.git'
+            }
+        }
+
+        stage('Test & Build') {
+            steps {
+                sh '''
+                    cd backend
+                    mvn clean package
+                '''
+            }
+        }
+
+        stage('S3 Upload') {
+            steps {
+                withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
+                                   credentialsId: 'ubuntu', 
+                                   secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    
+                    s3Upload(
+                        bucket: "${S3_BUCKET}",
+                        file: "backend/target/${JAR_NAME}"
+                    )
+                }
+            }
+        }
+
+        stage('Deploy (Download & Run)') {
+            steps {
+                // We wrap this in credentials so the 'aws s3' CLI command can authenticate
+                withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
+                                   credentialsId: 'ubuntu', 
+                                   secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh """
+                        echo "Stopping old container..."
+                        docker stop my-app || true
+                        docker rm my-app || true
+                        
+                        echo "Downloading artifact from S3..."
+                        aws s3 cp s3://${S3_BUCKET}/${JAR_NAME} backend/app.jar
+                        
+                        echo "Building and running image..."
+                        # This assumes a Dockerfile exists in your workspace root
+                        docker build -t ${IMAGE} ./backend
+                        docker run -d -p 8081:8081 --name my-app ${IMAGE}
+                    """
+                }
+            }
+        }
+    }
+}
