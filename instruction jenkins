@@ -2,3 +2,4 @@
 - install the required build tools for FE and BE
 - install aws cli on BE (s3)
 - give sudo permission to docker
+jekins plugin --> Pipeline: AWS Steps , s3 artifact manager, 
